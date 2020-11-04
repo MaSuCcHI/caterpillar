@@ -5,7 +5,7 @@
 *------------------------------------------------------------------------------------------------*/
 
 #pragma once
-#include <boost/dynamic_bitset.hpp>
+#include <easy/utils/dynamic_bitset.hpp>
 #include "mapping_strategy.hpp"
 #include <caterpillar/solvers/solver_manager.hpp>
 #include <caterpillar/structures/stg_gate.hpp>
@@ -300,14 +300,14 @@ public:
 class abstract_xag_low_depth_mapping_strategy : public mapping_strategy<abstract_xag_network>
 {
 
-  void eval_copies(std::vector<cone_t>& cones, boost::dynamic_bitset<>& visited)
+  void eval_copies(std::vector<cone_t>& cones, easy::utils::dynamic_bitset<>& visited)
   {
     //problem gere as leaves are empty when there is a direct ling
     for(auto& cone : cones) 
     {
       for (auto l : cone.leaves )
       {
-        assert( l < visited.size());
+        assert( l < visited.num_bits());
         if( visited[l] == true)
         {
           cone.copies.push_back(l);
@@ -318,7 +318,7 @@ class abstract_xag_low_depth_mapping_strategy : public mapping_strategy<abstract
     {
       for(auto l : cone.leaves )
       {
-        visited.set(l);
+        visited.set_bit(l);
       }
     }
   }
@@ -346,7 +346,9 @@ public:
       std::vector<std::pair<uint32_t, std::vector<cone_t>>> node_and_action;      
       std::vector<std::pair<uint32_t, std::vector<cone_t>>> to_be_uncomputed;
 
-      boost::dynamic_bitset<> visited (xag.size());
+      easy::utils::dynamic_bitset<> visited;
+      visited.resize(xag.size());
+
       for(auto n : lvl)
       {
         if(xag.is_and(n))

@@ -5,7 +5,7 @@
 *------------------------------------------------------------------------------------------------*/
 
 #pragma once
-#include <boost/dynamic_bitset.hpp>
+#include <easy/utils/dynamic_bitset.hpp>
 #include "mapping_strategy.hpp"
 #include <caterpillar/solvers/solver_manager.hpp>
 #include <caterpillar/structures/stg_gate.hpp>
@@ -451,7 +451,9 @@ class xag_pebbling_mapping_strategy : public mapping_strategy<xag_network>
       {
         /* collect all the input signals of the box */
         std::vector<abstract_network::signal> box_ins;
-        boost::dynamic_bitset<> visited (xag.size());
+
+        easy::utils::dynamic_bitset<> visited;
+        visited.resize(xag.size());
 
         auto cones = get_cones(  node, xag, fi );
         auto tot_leaves = cones[0].leaves.size() + cones[1].leaves.size();
@@ -461,7 +463,7 @@ class xag_pebbling_mapping_strategy : public mapping_strategy<xag_network>
           {
             if(!visited[l])
               box_ins.push_back(xag_to_box[l]);
-            visited.set(l);
+            visited.set_bit(l);
           }
         }
         
@@ -528,13 +530,13 @@ public:
 class xag_low_depth_mapping_strategy : public mapping_strategy<xag_network>
 {
 
-  void eval_copies(std::vector<cone_t>& cones, boost::dynamic_bitset<>& visited)
+  void eval_copies(std::vector<cone_t>& cones, easy::utils::dynamic_bitset<>& visited)
   {
     for(auto& cone : cones) 
     {
       for (auto l : cone.leaves )
       {
-        assert( l < visited.size());
+        assert( l < visited.num_bits());
         if( visited[l] == true)
         {
           cone.copies.push_back(l);
@@ -545,7 +547,7 @@ class xag_low_depth_mapping_strategy : public mapping_strategy<xag_network>
     {
       for(auto l : cone.leaves )
       {
-        visited.set(l);
+        visited.set_bit(l);
       }
     }
   }
@@ -578,8 +580,9 @@ public:
       std::vector<std::pair<uint32_t, std::vector<cone_t>>> node_and_action;      
       std::vector<std::pair<uint32_t, std::vector<cone_t>>> to_be_uncomputed;
 
+      easy::utils::dynamic_bitset<> visited;
+      visited.resize(xag.size());
 
-      boost::dynamic_bitset<> visited (xag.size());
       for(auto n : lvl)
       {
         /* this strategy does not support symplification of an included fanin cone, hence the false flag */
