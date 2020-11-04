@@ -85,12 +85,12 @@ namespace caterpillar::detail
   }
 
   /* finds T-count, T-depth and #CNOT for {X, CNOT, CCNOT} circuits where all CCNOT are computed on a clean helper line */
-  static inline std::tuple<int, int, int> qc_stats(tweedledum::netlist<caterpillar::stg_gate> const& ntk, bool use_tdepth1 = false)
+  static inline std::tuple<uint32_t, uint32_t, uint32_t> qc_stats(tweedledum::netlist<caterpillar::stg_gate> const& ntk, bool use_tdepth1 = false)
   {
-    auto Tcount = 0;
-    auto CNOT = 0;
+    auto Tcount = 0u;
+    auto CNOT = 0u;
 
-    std::vector<int> depths (ntk.num_qubits());
+    std::vector<uint32_t> depths (ntk.num_qubits());
     std::vector<bool> mask (ntk.num_qubits());
 
 

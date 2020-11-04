@@ -6,12 +6,13 @@
 #pragma once
 #include "../structures/stg_gate.hpp"
 #include "strategies/mapping_strategy.hpp"
+#include "strategies/xag_mapping_strategy.hpp"
 
 #include <array>
 #include <cstdint>
 #include <fmt/format.h>
 #include <mockturtle/algorithms/cut_enumeration/spectr_cut.hpp>
-#include <caterpillar/synthesis/strategies/xag_mapping_strategy.hpp>
+
 #include <mockturtle/networks/xag.hpp>
 #include <mockturtle/traits.hpp>
 #include <mockturtle/utils/node_map.hpp>
@@ -28,8 +29,6 @@ using SetQubits = std::vector<Qubit>;
 
 namespace caterpillar
 {
-
-namespace mt = mockturtle;
 
 struct xag_tracer_params
 {
@@ -720,11 +719,11 @@ static bool xag_tracer(  Ntk const& ntk,
 
   xag_tracer_stats st;
   if constexpr (std::is_same_v<decltype(strategy), xag_low_depth_mapping_strategy>){ assert( ps.low_tdepth_AND ); }
-  if constexpr (std::is_same_v<decltype(strategy), xag_depth_fit_mapping_strategy>){ assert( ps.low_tdepth_AND ); }
   if constexpr (std::is_same_v<decltype(strategy), xag_mapping_strategy>)          { assert( !ps.low_tdepth_AND ); }
   if constexpr (std::is_same_v<decltype(strategy), xag_fast_lowt_mapping_strategy>){ assert( !ps.low_tdepth_AND ); }
+  #ifdef USE_Z3
   if constexpr (std::is_same_v<decltype(strategy), xag_pebbling_mapping_strategy>) { assert( !ps.low_tdepth_AND ); }
-
+  #endif
   detail::xag_tracer_impl<Ntk> impl( ntk, strategy, ps, st);
                                                                                                                                                                                      
   const auto result = impl.run();

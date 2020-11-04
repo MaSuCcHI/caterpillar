@@ -73,12 +73,12 @@ TEST_CASE(" pebble inplace simple graph ", "[pebin]")
   CHECK( strategy.size() == 3 );
 
 	CHECK( strategy[0].first == 4);
-	CHECK( std::get<2>(strategy[0].second).target_index == 1);
+	CHECK( std::get<2>(strategy[0].second).target_index <= 2);
 
 	CHECK( strategy[1].first == 5);
 
 	CHECK( strategy[2].first == 4);
-	CHECK( std::get<3>(strategy[2].second).target_index == 1);
+	CHECK( std::get<3>(strategy[2].second).target_index <= 2);
 
 }
 
@@ -153,14 +153,14 @@ TEST_CASE("pebble inplace simple graph 3", "[pebin3]")
 	CHECK( strategy.size() == 5 );
 
 	CHECK(strategy[0].first == 4);
-	CHECK(std::get<2>(strategy[0].second).target_index == 2);
+	CHECK(std::get<2>(strategy[0].second).target_index <= 2);
 	CHECK(strategy[1].first == 5);
 	CHECK(std::get<2>(strategy[1].second).target_index == 4);
 	CHECK(strategy[2].first == 6);
 	CHECK(strategy[3].first == 5);
 	CHECK(std::get<3>(strategy[3].second).target_index == 4);	
 	CHECK(strategy[4].first == 4);
-	CHECK(std::get<3>(strategy[4].second).target_index == 2);
+	CHECK(std::get<3>(strategy[4].second).target_index <= 2);
 
 }
 
