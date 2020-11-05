@@ -45,7 +45,7 @@ public:
 	using node = node<Ntk>;
   using result = z3::check_result;
 
-	z3_pebble_inplace_solver(const Ntk& net, const int& pebbles, const uint& max_conflicts = 0, const uint& timeout = 0, const uint max_weight = 0)
+	z3_pebble_inplace_solver(const Ntk& net, const int& pebbles, const uint& max_conflicts = 0, const uint& timeout = 0, const uint32_t max_weight = 0)
 	:_net(net), _pebbles(pebbles+_net.num_pis()+1), _max_weight(max_weight), slv(solver(ctx)), solution_model(ctx), curr(variables(ctx)), next(variables(ctx))
 	{
 		static_assert( has_get_node_v<Ntk>, "Ntk does not implement the get_node method" );

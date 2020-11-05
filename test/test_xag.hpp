@@ -31,7 +31,7 @@ enum class xag_method {
   abs_xag_lowd,
 };
 
-inline static mockturtle::xag_network get_xag(uint const& val)
+inline static mockturtle::xag_network get_xag(uint32_t const& val)
 {
   mockturtle::xag_network xag;
   if(val == 1)
@@ -403,14 +403,14 @@ inline static mockturtle::xag_network get_xag(uint const& val)
   return xag;
 }
 
-static bool xag_synthesis(xag_method const& m, uint const& num_xag, bool verbose = false, pebbling_mapping_strategy_params const& peb_ps = {} )
+static bool xag_synthesis(xag_method const& m, uint32_t const& num_xag, bool verbose = false, pebbling_mapping_strategy_params const& peb_ps = {} )
 {
   using namespace caterpillar;
   using namespace mockturtle;
   using namespace tweedledum;
 
   xag_network xag = get_xag(num_xag);
-  uint pis = xag.num_pis();
+  uint32_t pis = xag.num_pis();
   netlist<stg_gate> qnet;
   logic_network_synthesis_params ps;
   logic_network_synthesis_stats st;
@@ -497,7 +497,7 @@ static bool xag_synthesis(xag_method const& m, uint const& num_xag, bool verbose
   return false;
 }
 
-static bool test_tracer(xag_method const& m, uint const& num_xag, bool verbose = false, pebbling_mapping_strategy_params const& peb_ps = {} )
+static bool test_tracer(xag_method const& m, uint32_t const& num_xag, bool verbose = false, pebbling_mapping_strategy_params const& peb_ps = {} )
 {
 
   using namespace caterpillar;

@@ -40,7 +40,7 @@ class z3_pebble_solver
     expr_vector a;
 	};
 
-	expr_vector card_by_sorted_net (expr_vector const& net, uint const w)
+	expr_vector card_by_sorted_net (expr_vector const& net, uint32_t const w)
 	{
 		expr_vector card_cnst (ctx);
 		for( auto i = w; i <net.size(); i++)
@@ -68,7 +68,7 @@ class z3_pebble_solver
 		return net;
 	}
 
-	uint get_weight_from_model()
+	uint32_t get_weight_from_model()
 	{
 		auto w = 0u;
 		for(uint32_t n=0; n< current.s.size(); n++)
@@ -209,7 +209,7 @@ public:
 	{
 
 		expr_vector w_expr = weight_expr();
-		uint w = get_weight_from_model();
+		uint32_t w = get_weight_from_model();
 		while(true)
 		{
 			slv.push();	
