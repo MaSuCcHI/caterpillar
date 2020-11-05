@@ -25,7 +25,7 @@ struct pebbling_mapping_strategy_params
   uint32_t pebble_limit{0u};
 
   /*! \brief Maximum number of steps */
-  uint32_t max_steps{std::numeric_limits<uint>::max()};
+  uint32_t max_steps{std::numeric_limits<uint32_t>::max()};
 
   /*! \brief Conflict limit for the SAT solver (0 means no limit). */
   uint32_t conflict_limit{0};
