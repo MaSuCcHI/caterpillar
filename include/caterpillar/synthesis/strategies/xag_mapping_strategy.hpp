@@ -18,8 +18,6 @@
 #include <mockturtle/views/depth_view.hpp>
 #include <mockturtle/utils/node_map.hpp>
 #include <tweedledum/networks/netlist.hpp>
-#include <caterpillar/details/bron_kerbosch.hpp>
-#include <caterpillar/details/bron_kerbosch_utils.hpp>
 #include <caterpillar/details/depth_costs.hpp>
 #include <algorithm>
 #include <chrono>
