@@ -42,3 +42,4 @@ if(CATERPILLAR_EXPERIMENTS)
 endif()
 
 add_subdirectory(keisuke_code)
+add_subdirectory(keisuke_proposal)

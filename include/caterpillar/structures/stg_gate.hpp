@@ -4,106 +4,80 @@
 | Author(s): Giulia Meuli
 *------------------------------------------------------------------------------------------------*/
 #pragma once
+#include <kitty/constructors.hpp>
+#include <kitty/dynamic_truth_table.hpp>
 #include <tweedledum/gates/gate_base.hpp>
 #include <tweedledum/networks/netlist.hpp>
 #include <tweedledum/networks/qubit.hpp>
-
-#include <kitty/constructors.hpp>
-#include <kitty/dynamic_truth_table.hpp>
-
 #include <vector>
 
-namespace caterpillar
-{
+namespace caterpillar {
 
 namespace td = tweedledum;
 
-/*! 
+/*!
   A single-target gate is a reversible gate characterized by:
   `_function` a control function,
   `_controls` a list of control qubits,
   `_targets` a list of target qubits.
-  
-  X gates are applied to the targets whenever the control function evaluates to true.
+
+  X gates are applied to the targets whenever the control function evaluates to
+  true.
 */
-class stg_gate : public td::gate_base
-{
-
-public:
-  stg_gate( gate_base const& op, td::qubit_id target )
-    : td::gate_base( op )
-  {
-    assert( is_single_qubit() );
-    _targets.push_back( target );
+class stg_gate : public td::gate_base {
+ public:
+  stg_gate(gate_base const& op, td::qubit_id target) : td::gate_base(op) {
+    assert(is_single_qubit());
+    _targets.push_back(target);
   }
 
-  stg_gate( gate_base const& op, td::qubit_id control, td::qubit_id target )
-      : gate_base( op )
-  {
-    assert( is_double_qubit() );
-    _controls.push_back( control );
-    _targets.push_back( target );
+  stg_gate(gate_base const& op, td::qubit_id control, td::qubit_id target)
+      : gate_base(op) {
+    assert(is_double_qubit());
+    _controls.push_back(control);
+    _targets.push_back(target);
   }
 
-  stg_gate( gate_base const& op, std::vector<td::qubit_id> const& controls, std::vector<td::qubit_id> const& targets )
-      : td::gate_base( op ),
-        _controls( controls ),
-        _targets( targets )
-  {
+  stg_gate(gate_base const& op, std::vector<td::qubit_id> const& controls,
+           std::vector<td::qubit_id> const& targets)
+      : td::gate_base(op), _controls(controls), _targets(targets) {}
+
+  stg_gate(kitty::dynamic_truth_table const& function,
+           std::vector<td::qubit_id> const& controls, td::qubit_id target)
+      : gate_base(td::gate_set::num_defined_ops),
+        _function(function),
+        _controls(controls) {
+    _targets.push_back(target);
   }
 
-  stg_gate( kitty::dynamic_truth_table const& function, std::vector<td::qubit_id> const& controls, td::qubit_id target )
-      : gate_base( td::gate_set::num_defined_ops ),
-        _function( function ),
-        _controls( controls )
-  {
-    _targets.push_back( target );
+  bool is_unitary_gate() const {
+    return td::gate_base::is_unitary_gate() ||
+           operation() == td::gate_set::num_defined_ops;
   }
 
-  bool is_unitary_gate() const
-  {
-    return td::gate_base::is_unitary_gate() || operation() == td::gate_set::num_defined_ops;
-  }
+  uint32_t num_controls() const { return _controls.size(); }
 
-  uint32_t num_controls() const
-  {
-    return _controls.size();
-  }
+  uint32_t num_targets() const { return _targets.size(); }
 
-  uint32_t num_targets() const
-  {
-    return _targets.size();
-  }
+  auto controls() const { return _controls; }
 
-  auto controls() const
-  {
-    return _controls;
-  }
+  auto targets() const { return _targets; }
 
-  auto targets() const
-  {
-    return _targets;
-  }
-
-  template<typename Fn>
-  void foreach_control( Fn&& fn ) const
-  {
-    for ( auto c : _controls )
-    {
-      fn( c );
+  template <typename Fn>
+  void foreach_control(Fn&& fn) const {
+    for (auto c : _controls) {
+      fn(c);
     }
   }
 
-  template<typename Fn>
-  void foreach_target( Fn&& fn ) const
-  {
-    for ( auto t : _targets )
-    {
-      fn( t );
+  template <typename Fn>
+  void foreach_target(Fn&& fn) const {
+    for (auto t : _targets) {
+      fn(t);
     }
   }
 
-private:
+ private:
   /*! \brief control function of a single-target gate */
   kitty::dynamic_truth_table _function;
 
@@ -114,4 +88,4 @@ private:
   std::vector<td::qubit_id> _targets{};
 };
 
-} // namespace caterpillar
+}  // namespace caterpillar
