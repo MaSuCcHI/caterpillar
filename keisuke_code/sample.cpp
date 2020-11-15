@@ -28,40 +28,38 @@
 #include <vector>
 
 int main() {
-  using namespace caterpillar;
-  using namespace mockturtle;
-  using namespace tweedledum;
-
-  mockturtle::xag_network xag;
-  auto const result = lorina::read_verilog(
-      "/Users/kei/Desktop/卒研/pプログラム/Sample/simpleTest.v",
-      mockturtle::verilog_reader(xag));
-
-  // auto strategy = caterpillar::bennett_mapping_strategy();
-  auto strategy = caterpillar::xag_mapping_strategy();
-  // auto strategy2 = caterpillar::bennett_inplace_mapping_strategy();
-  tweedledum::netlist<caterpillar::stg_gate> circ;
-  caterpillar::logic_network_synthesis(circ, xag, strategy);
-
-
-  printf("size:%d  qubits:%d gates:%d\n", circ.size(), circ.num_qubits(),
-         circ.num_gates());
-
-  // to_qasm
-  std::ostringstream s;
-  tweedledum::write_qasm(circ, s);
-
-  // status
-  auto stats = caterpillar::detail::qc_stats(circ,false);
-
-  //ファイル書き込み
-  std::ofstream outfile("./keisuke_code/text.txt");
-  outfile << s.str() << std::endl;
-  outfile.close();
-
-  // printf("HELLO !! \n");
-  printf("CNOT:%d Tcount:%d Tdepth:%d\n", std::get<0>(stats),
-         std::get<1>(stats), std::get<2>(stats));
-      //   test();
-      return 0;
+    using namespace caterpillar;
+    using namespace mockturtle;
+    using namespace tweedledum;
+    using namespace std;
+    
+    mockturtle::xag_network xag;
+    auto const result = lorina::read_verilog(
+                                             "/Users/kei/Desktop/卒研/pプログラム/Sample/simpleTest.v",
+                                             mockturtle::verilog_reader(xag));
+    
+    auto strategy = caterpillar::xag_mapping_strategy();
+    tweedledum::netlist<caterpillar::stg_gate> circ;
+    caterpillar::logic_network_synthesis(circ, xag, strategy);
+    
+    
+    // to_qasm
+    std::ostringstream s;
+    tweedledum::write_qasm(circ, s);
+    
+    //write
+    std::ofstream outfile("./keisuke_code/qasm.txt");
+    std::cout << s.str() << std::endl;
+    outfile.close();
+    
+    // status
+    auto stats = caterpillar::detail::qc_stats(circ,false);
+    
+    printf("size:%d  qubits:%d gates:%d\n", circ.size(), circ.num_qubits(),
+           circ.num_gates());
+    
+    printf("CNOT:%d Tcount:%d Tdepth:%d\n", std::get<0>(stats),
+           std::get<1>(stats), std::get<2>(stats));
+    
+    return 0;
 }

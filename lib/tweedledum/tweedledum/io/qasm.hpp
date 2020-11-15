@@ -92,6 +92,20 @@ void write_qasm(Network const& network, std::ostream& os)
 				os << fmt::format("rx({}) q[{}];\n", gate.rotation_angle().numeric_value(), target);
 			});
 			break;
+                
+        case gate_set::cz:
+            gate.foreach_control([&](auto control){
+                if (control.is_complemented()) {
+                    os << fmt::format("x q[{}];\n", control.index());
+                }
+                gate.foreach_target([&](auto target) {
+                    os << fmt::format("cz q[{}], q[{}];\n", control.index(), target);
+                });
+                if (control.is_complemented()) {
+                    os << fmt::format("x q[{}];\n", control.index());
+                }
+            });
+            break;
 
 		case gate_set::cx:
 			gate.foreach_control([&](auto control) {
