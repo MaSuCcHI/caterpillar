@@ -104,8 +104,7 @@ void decompose(netlist<stg_gate>& qcitc,
 }
 
 void decompose_with_propose_approach( netlist<stg_gate>& qcirc,
-                                     const netlist<stg_gate> circ,
-                                     const xag_network network) {
+                                     const netlist<stg_gate> circ) {
     
     std::cout << "提案処理"<<std::endl;
     
@@ -248,12 +247,13 @@ int main(){
     tweedledum::netlist<caterpillar::stg_gate> circ;
     caterpillar::logic_network_synthesis(circ, xag, strategy);
     std::ostringstream s0;
+    
     tweedledum::write_qasm(circ, s0);
     std::cout<<s0.str()<<std::endl;
     
     
     tweedledum::netlist<caterpillar::stg_gate> rcirc;
-    decompose_with_propose_approach(rcirc,circ,xag);
+    decompose_with_propose_approach(rcirc,circ);
     
     
     // to_qasm
