@@ -43,6 +43,11 @@ using namespace tweedledum;
  - controlで使用したものは以降に使用しないようであれば分解する．
  - targetビットは空いてくるビットを優先的に使う
  
+  TODO 11/15
+    - 初期入力qubitをisCleanQubit=falseに設定する！！
+    - clean 同士のcxゲートは計算しないようにする．
+ 
+ 
  */
 
 /// 指定したノードが以降の処理で使用されない場合に分解する．
@@ -50,6 +55,7 @@ void decompose(netlist<stg_gate>& qcitc,
                uint32_t qubit_id,
                vector<vector<uint32_t>> checkAfteruse,
                vector<bool>& isCleanQubit,
+               map<uint32_t,uint32_t>& reallocationIndex,
                map<uint32_t,vector<uint32_t>>& saveToDecompose,
                map<uint32_t,vector<vector<uint32_t>>> resetQubitElement){
     //他の要素の分解で必要な場合分解しない．
@@ -73,6 +79,8 @@ void decompose(netlist<stg_gate>& qcitc,
     //機能が足りない（caterpillar には古典ビットが実装されていないため観測結果を使うことができない）
     //qcirc.add_gate(gate::measure,qubit_id,classical_bit);
     isCleanQubit[qubit_id] = true;
+    reallocationIndex.erase(qubit_id);
+    
     for(vector<uint32_t> elems : resetQubitElement[qubit_id]){
         if(elems.size()==1){
             //観測結果が|1>ならば
@@ -83,9 +91,6 @@ void decompose(netlist<stg_gate>& qcitc,
         } else if (elems.size()==2) {
             //観測結果が|1>ならば
             qcitc.add_gate(gate::cz,elems[0],elems[1]);
-//            qcitc.add_gate(gate::hadamard,elems[1]);
-//            qcitc.add_gate(gate::cx,elems[0],elems[1]);
-//            qcitc.add_gate(gate::hadamard,elems[1]);
             
             auto tmp = saveToDecompose[elems[0]];
             tmp.erase(remove_if(tmp.begin(), tmp.end(), [&](auto id){return id == qubit_id;}));
@@ -98,13 +103,14 @@ void decompose(netlist<stg_gate>& qcitc,
     
 }
 
-void decompose_with_propose_approach( tweedledum::netlist<caterpillar::stg_gate>& qcirc,
-                                     tweedledum::netlist<caterpillar::stg_gate> circ) {
+void decompose_with_propose_approach( netlist<stg_gate>& qcirc,
+                                     const netlist<stg_gate> circ,
+                                     const xag_network network) {
     
     std::cout << "提案処理"<<std::endl;
     
     //使っているかの確認用
-    vector<bool> isCleanQubit(circ.num_qubits(),true);
+    vector<bool> isCleanQubit(circ.num_qubits(),false);
     
     //他の分解に必要かの確認用
     map<uint32_t,vector<uint32_t>> saveToDecompose;
@@ -112,11 +118,17 @@ void decompose_with_propose_approach( tweedledum::netlist<caterpillar::stg_gate>
     //使ったことのあるものかを記録
     vector<bool> isUsedFirstTime(circ.num_qubits(),false);
     
-    //xorを分解するときにczをかけるべきものを管理
+    //分解するときにczをかけるべきものを管理
     map<uint32_t,vector<vector<uint32_t>>> resetQubitElement;
+
+    //check repeting ANDs for uncomputation
+    vector<tuple<uint32_t,uint32_t,uint32_t>> ash;
+    
+    //qubitのindex再配置map
+    map<uint32_t, uint32_t> reallocationIndex;
     
     
-    //前処理
+//前処理
     map<uint32_t, uint32_t> q_to_re_id;
     vector<vector<uint32_t>> checkAfterUse;
     
@@ -125,34 +137,51 @@ void decompose_with_propose_approach( tweedledum::netlist<caterpillar::stg_gate>
         q_to_re_id[ip] = q;
     });
     
-    circ.foreach_cinput([&] (const auto node){
-        auto tt = q_to_re_id;
-        auto t = node;
-    });
     
+    //入力値の初期状態を not clean + その後の処理で使われるものをチェック
     circ.foreach_cgate([&] (const auto rgate){
         auto cs = rgate.gate.controls();
         auto ts = rgate.gate.targets();
             
         vector<uint32_t> tmp;
-        for(uint32_t elem : cs) tmp.push_back(elem);
-        //for(uint32_t elem : ts) tmp.push_back(elem);
+        for(uint32_t elem : cs) tmp.push_back(q_to_re_id[elem]);
+        for(uint32_t elem : ts) isCleanQubit[q_to_re_id[elem]] = true;
         checkAfterUse.push_back(tmp);
     });
     
+    for(uint32_t i=0; i < isCleanQubit.size(); i++){
+        if(isCleanQubit[i]==false){
+            reallocationIndex[i] = i;
+        }
+    }
     
-    //処理
+    
+//本処理
     circ.foreach_cgate([&] (const auto rgate){
         auto cs = rgate.gate.controls();
         auto ts = rgate.gate.targets();
         checkAfterUse.erase(checkAfterUse.begin());
         
+        for(uint32_t c : cs){
+            if(reallocationIndex.find(c)==end(reallocationIndex))return;
+        }
         
+        if(reallocationIndex.find(ts[0])==end(reallocationIndex)){
+            for(uint32_t i=0;i<isCleanQubit.size();i++){
+                if(isCleanQubit[i]){
+                    reallocationIndex[ts[0]]=i;
+                    break;
+                }
+            }
+            
+        }
         
         //CX
         if(rgate.gate.num_controls()==1){
-            auto c0 = q_to_re_id[cs[0]];
-            auto t0 = q_to_re_id[ts[0]];
+            auto c0 = reallocationIndex[q_to_re_id[cs[0]]];
+            auto t0 = reallocationIndex[q_to_re_id[ts[0]]];
+            
+            if(isCleanQubit[c0]==true)return;
             
             qcirc.add_gate(gate::cx,c0,t0);
             
@@ -167,32 +196,36 @@ void decompose_with_propose_approach( tweedledum::netlist<caterpillar::stg_gate>
         }
         //CCX
         else if (rgate.gate.num_controls()==2){
-            auto c0 = q_to_re_id[cs[0]];
-            auto c1 = q_to_re_id[cs[1]];
-            auto t0 = q_to_re_id[ts[0]];
+            auto c0 = reallocationIndex[q_to_re_id[cs[0]]];
+            auto c1 = reallocationIndex[q_to_re_id[cs[1]]];
+            auto t0 = reallocationIndex[q_to_re_id[ts[0]]];
             
-            if(resetQubitElement.find(ts[0])==end(resetQubitElement)){
+            auto tmp_tuple = make_tuple(q_to_re_id[cs[0]],
+                       q_to_re_id[cs[1]],
+                       q_to_re_id[ts[0]]);
+            if(resetQubitElement.find(t0)==end(resetQubitElement)
+               && find(ash.begin(),ash.end(),tmp_tuple)==ash.end()){
                 //合成
                 qcirc.add_gate(gate::mcx,cs,ts);
                 vector<uint32_t> resets;
                 resets.push_back(c0);
                 resets.push_back(c1);
                 resetQubitElement[t0].push_back(resets);
-                saveToDecompose[c0].push_back(ts[0]);
-                saveToDecompose[c1].push_back(ts[0]);
-                
+                saveToDecompose[c0].push_back(t0);
+                saveToDecompose[c1].push_back(t0);
+                ash.push_back(tmp_tuple);
                 
             } else {
                 //分解
-//                decompose(qcirc, t0, checkAfterUse, saveToDecompose, resetQubitElement);
-//                qcirc.add_gate(gate::mcx,cs,ts);
+
                 
             }
         }
-        isCleanQubit[ts[0]] = false;
+        auto t0 = reallocationIndex[q_to_re_id[ts[0]]];
+        isCleanQubit[t0] = false;
         for(auto control : cs){
-            auto c = q_to_re_id[control];
-            decompose(qcirc, c, checkAfterUse, isCleanQubit, saveToDecompose, resetQubitElement);
+            auto c = reallocationIndex[q_to_re_id[control]];
+            decompose(qcirc, c, checkAfterUse, isCleanQubit, reallocationIndex, saveToDecompose, resetQubitElement);
         }
     });
     
@@ -220,7 +253,7 @@ int main(){
     
     
     tweedledum::netlist<caterpillar::stg_gate> rcirc;
-    decompose_with_propose_approach(rcirc,circ);
+    decompose_with_propose_approach(rcirc,circ,xag);
     
     
     // to_qasm
