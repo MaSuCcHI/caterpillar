@@ -53,7 +53,7 @@ using namespace tweedledum;
 /// 指定したノードが以降の処理で使用されない場合に分解する．
 void decompose(netlist<stg_gate>& qcitc,
                uint32_t qubit_id,
-               vector<vector<uint32_t>> checkAfteruse,
+               vector<pair<vector<uint32_t>,vector<uint32_t>>> checkAfteruse,
                vector<bool>& isCleanQubit,
                map<uint32_t,uint32_t>& reallocationIndex,
                map<uint32_t,vector<uint32_t>>& saveToDecompose,
@@ -63,15 +63,19 @@ void decompose(netlist<stg_gate>& qcitc,
     
     if(isCleanQubit[qubit_id]==true) return;
     
-    //この処理の後のゲートで必要になった場合分解しない．
+    //qubit_idが分解されるまでの間でこの処理の後のゲートで必要になった場合分解しない．
     int count = 0;
-    for(vector<uint32_t> elems : checkAfteruse){
+    const auto gateInfo = checkAfteruse[0];
+    for(uint32_t i = 0; i<checkAfteruse.size(); i++ ){
+        if(i==0)continue;
+        if(gateInfo == checkAfteruse[i]) break;
+        const auto elems = checkAfteruse[i].first;
         for(uint32_t elem : elems){
             if(qubit_id == elem)count++;
         }
     }
     // TODO ここコーナーケースありそう．よく考える
-    if(count>=2) return;
+    if(count>=1) return;
     
     
     //分解
@@ -129,7 +133,7 @@ void decompose_with_propose_approach( netlist<stg_gate>& qcirc,
     
 //前処理
     map<uint32_t, uint32_t> q_to_re_id;
-    vector<vector<uint32_t>> checkAfterUse;
+    vector<pair<vector<uint32_t>,vector<uint32_t>>> checkAfterUse;
     
     circ.foreach_cqubit([&] (const uint32_t ip){
         uint32_t q = qcirc.add_qubit();
@@ -142,9 +146,12 @@ void decompose_with_propose_approach( netlist<stg_gate>& qcirc,
         auto cs = rgate.gate.controls();
         auto ts = rgate.gate.targets();
             
-        vector<uint32_t> tmp;
-        for(uint32_t elem : cs) tmp.push_back(q_to_re_id[elem]);
-        for(uint32_t elem : ts) isCleanQubit[q_to_re_id[elem]] = true;
+        pair<vector<uint32_t>, vector<uint32_t>> tmp;
+        for(uint32_t elem : cs) tmp.first.push_back(q_to_re_id[elem]);
+        for(uint32_t elem : ts) {
+            tmp.second.push_back(q_to_re_id[elem]);
+            isCleanQubit[q_to_re_id[elem]] = true;
+        }
         checkAfterUse.push_back(tmp);
     });
     
@@ -159,7 +166,6 @@ void decompose_with_propose_approach( netlist<stg_gate>& qcirc,
     circ.foreach_cgate([&] (const auto rgate){
         auto cs = rgate.gate.controls();
         auto ts = rgate.gate.targets();
-        checkAfterUse.erase(checkAfterUse.begin());
         
         for(uint32_t c : cs){
             if(reallocationIndex.find(c)==end(reallocationIndex))return;
@@ -226,6 +232,8 @@ void decompose_with_propose_approach( netlist<stg_gate>& qcirc,
             auto c = reallocationIndex[q_to_re_id[control]];
             decompose(qcirc, c, checkAfterUse, isCleanQubit, reallocationIndex, saveToDecompose, resetQubitElement);
         }
+        
+        checkAfterUse.erase(checkAfterUse.begin());
     });
     
 }
