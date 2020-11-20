@@ -27,6 +27,7 @@
 #include <tweedledum/networks/netlist.hpp>
 #include <vector>
 #include <map>
+#include <set>
 
 using namespace std;
 using namespace caterpillar;
@@ -56,7 +57,7 @@ void decompose(netlist<stg_gate>& qcitc,
                vector<pair<vector<uint32_t>,vector<uint32_t>>> checkAfteruse,
                vector<bool>& isCleanQubit,
                map<uint32_t,uint32_t>& reallocationIndex,
-               map<uint32_t,vector<uint32_t>>& saveToDecompose,
+               map<uint32_t,set<uint32_t>>& saveToDecompose,
                map<uint32_t,vector<vector<uint32_t>>> resetQubitElement){
     //他の要素の分解で必要な場合分解しない．
     if(saveToDecompose[qubit_id].empty()==false) return;
@@ -64,6 +65,7 @@ void decompose(netlist<stg_gate>& qcitc,
     if(isCleanQubit[qubit_id]==true) return;
     
     //qubit_idが分解されるまでの間でこの処理の後のゲートで必要になった場合分解しない．
+    //checkafteruse[0]は今みているゲートの内容なので無視する．ただし必要なためeraseを後にしている，
     int count = 0;
     const auto gateInfo = checkAfteruse[0];
     for(uint32_t i = 0; i<checkAfteruse.size(); i++ ){
@@ -78,6 +80,7 @@ void decompose(netlist<stg_gate>& qcitc,
     if(count>=1) return;
     
     
+    if(resetQubitElement[qubit_id].empty())return;
     //分解
     qcitc.add_gate(gate::hadamard,qubit_id);
     //機能が足りない（caterpillar には古典ビットが実装されていないため観測結果を使うことができない）
@@ -91,15 +94,15 @@ void decompose(netlist<stg_gate>& qcitc,
             qcitc.add_gate(gate::pauli_z,elems[0]);
             
             auto tmp = saveToDecompose[elems[0]];
-            tmp.erase(remove_if(tmp.begin(), tmp.end(), [&](auto& id){return id == qubit_id;}));
+            tmp.erase(qubit_id);
         } else if (elems.size()==2) {
             //観測結果が|1>ならば
             qcitc.add_gate(gate::cz,elems[0],elems[1]);
             
             auto tmp = saveToDecompose[elems[0]];
-            tmp.erase(remove_if(tmp.begin(), tmp.end(), [&](auto id){return id == qubit_id;}));
+            tmp.erase(qubit_id);
             tmp = saveToDecompose[elems[1]];
-            tmp.erase(remove_if(tmp.begin(), tmp.end(), [&](auto& id){return id == qubit_id;}));
+            tmp.erase(qubit_id);
         }
     }
     
@@ -116,7 +119,7 @@ void decompose_with_propose_approach( netlist<stg_gate>& qcirc,
     vector<bool> isCleanQubit(circ.num_qubits(),false);
     
     //他の分解に必要かの確認用
-    map<uint32_t,vector<uint32_t>> saveToDecompose;
+    map<uint32_t,set<uint32_t>> saveToDecompose;
     
     //使ったことのあるものかを記録
     vector<bool> isUsedFirstTime(circ.num_qubits(),false);
@@ -126,6 +129,9 @@ void decompose_with_propose_approach( netlist<stg_gate>& qcirc,
 
     //check repeting ANDs for uncomputation
     vector<tuple<uint32_t,uint32_t,uint32_t>> ash;
+    
+    //check repeting XORs for uncomputation
+    vector<tuple<uint32_t,uint32_t>> xsh;
     
     //qubitのindex再配置map
     map<uint32_t, uint32_t> reallocationIndex;
@@ -188,13 +194,18 @@ void decompose_with_propose_approach( netlist<stg_gate>& qcirc,
             
             if(isCleanQubit[c0]==true)return;
             
-            qcirc.add_gate(gate::cx,c0,t0);
+            auto tmp_tuple = make_tuple(q_to_re_id[c0],q_to_re_id[t0]);
+            if(find(xsh.begin(),xsh.end(),tmp_tuple)==xsh.end()){
+                qcirc.add_gate(gate::cx,c0,t0);
+                xsh.push_back(tmp_tuple);
+            }
+            
             
             auto reset = resetQubitElement[c0];
             for(vector<uint32_t> elems :reset ){
-                resetQubitElement[t0].push_back(elems);
+                if(resetQubitElement.find(t0)==end(resetQubitElement))resetQubitElement[t0].push_back(elems);
                 for(uint32_t elem :elems){
-                    saveToDecompose[elem].push_back(t0);
+                    saveToDecompose[elem].insert(t0);
                 }
             }
             
@@ -216,8 +227,8 @@ void decompose_with_propose_approach( netlist<stg_gate>& qcirc,
                 resets.push_back(c0);
                 resets.push_back(c1);
                 resetQubitElement[t0].push_back(resets);
-                saveToDecompose[c0].push_back(t0);
-                saveToDecompose[c1].push_back(t0);
+                saveToDecompose[c0].insert(t0);
+                saveToDecompose[c1].insert(t0);
                 ash.push_back(tmp_tuple);
                 
             } else {
@@ -245,7 +256,7 @@ int main(){
     
     mockturtle::xag_network xag;
     auto const result = lorina::read_verilog(
-                                             "/Users/kei/Desktop/卒研/pプログラム/Sample/simpleTest.v",
+                                             "/Users/kei/Desktop/卒研/codes/benchmarks/date2020_experiments-master/BEST_RESULTS/EPFL_opt/adder_size_2016.blif_untilsat.v_complete.v",
                                              mockturtle::verilog_reader(xag));
     
     

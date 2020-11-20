@@ -35,10 +35,10 @@ int main() {
     
     mockturtle::xag_network xag;
     auto const result = lorina::read_verilog(
-                                             "/Users/kei/Desktop/卒研/pプログラム/Sample/simpleTest.v",
+                                             "/Users/kei/Desktop/卒研/codes/benchmarks/date2020_experiments-master/BEST_RESULTS/EPFL_opt/adder_size_2016.blif_untilsat.v_complete.v",
                                              mockturtle::verilog_reader(xag));
     
-    auto strategy = caterpillar::xag_mapping_strategy();
+    auto strategy = caterpillar::xag_fast_lowt_mapping_strategy();
     tweedledum::netlist<caterpillar::stg_gate> circ;
     caterpillar::logic_network_synthesis(circ, xag, strategy);
     
